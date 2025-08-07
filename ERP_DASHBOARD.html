@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Dashboard - Demand Forecasting & Inventory Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            overflow-x: auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: auto 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+            min-width: 1400px;
+            height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+
+        .header h1 {
+            color: #2563eb;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            overflow-y: auto;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .icon-blue { background: #2563eb; }
+        .icon-green { background: #059669; }
+        .icon-orange { background: #ea580c; }
+        .icon-red { background: #dc2626; }
+
+        .forecasting {
+            grid-column: 1;
+            grid-row: 2 / 4;
+        }
+
+        .inventory {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .production-logistics {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .notifications {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        .sales-analysis {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .additional-details {
+            grid-column: 4;
+            grid-row: 2 / 4;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 180px;
+            margin: 10px 0;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .inventory-item {
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .stock-adequate {
+            background: #f0fdf4;
+            border-color: #059669;
+        }
+
+        .stock-low {
+            background: #fffbeb;
+            border-color: #d97706;
+        }
+
+        .stock-critical {
+            background: #fef2f2;
+            border-color: #dc2626;
+        }
+
+        .stock-level {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .stock-adequate .stock-level { color: #059669; }
+        .stock-low .stock-level { color: #d97706; }
+        .stock-critical .stock-level { color: #dc2626; }
+
+        .production-timeline {
+            margin: 10px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 6px 0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .timeline-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-complete { background: #059669; }
+        .status-progress { background: #2563eb; }
+        .status-delayed { background: #dc2626; }
+
+        .supplier-grid {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .supplier-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .supplier-status {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-ontime {
+            background: #dcfce7;
+            color: #059669;
+        }
+
+        .status-delayed {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-critical {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .kpi-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .kpi-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .kpi-label {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+
+        .alert-banner {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .alert-icon {
+            color: #dc2626;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 11px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+        }
+
+        .delivery-map {
+            height: 80px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .route-line {
+            position: absolute;
+            height: 3px;
+            background: #2563eb;
+            border-radius: 2px;
+            animation: routeProgress 3s ease-in-out infinite;
+        }
+
+        @keyframes routeProgress {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 100%; }
+        }
+
+        .truck-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #2563eb;
+            animation: truckMove 3s ease-in-out infinite;
+        }
+
+        @keyframes truckMove {
+            0% { right: 80%; }
+            100% { right: 20px; }
+        }
+
+        /* Enhanced forecasting styles */
+        .forecast-btn {
+            padding: 6px 12px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 11px;
+        }
+
+        .forecast-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .forecast-btn:hover {
+            border-color: #2563eb;
+        }
+
+        .ai-insights {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .live-indicator {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .trending-products, .declining-alerts, .weather-impact {
+            margin: 10px 0;
+        }
+
+        .trending-products h4, .declining-alerts h4, .weather-impact h4 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .trend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            margin: 4px 0;
+            border-radius: 6px;
+            background: white;
+            font-size: 11px;
+        }
+
+        .trend-up {
+            border-left: 3px solid #059669;
+        }
+
+        .trend-down {
+            border-left: 3px solid #dc2626;
+        }
+
+        .trend-value {
+            font-weight: bold;
+        }
+
+        .trend-up .trend-value {
+            color: #059669;
+        }
+
+        .trend-down .trend-value {
+            color: #dc2626;
+        }
+
+        .btn-mini {
+            padding: 3px 6px;
+            font-size: 9px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-orange {
+            background: #ea580c;
+            color: white;
+        }
+
+        .weather-alert {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border-left: 3px solid #f59e0b;
+            font-size: 11px;
+        }
+
+        .weather-icon {
+            font-size: 16px;
+        }
+
+        .weather-detail {
+            font-size: 10px;
+            color: #92400e;
+            margin-top: 2px;
+        }
+
+        .accuracy-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin: 10px 0;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 6px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .metric-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .metric-label {
+            font-size: 9px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        /* Sales Analysis Table Styles - Compact */
+        .sales-analysis-content {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .sales-analysis-content h4 {
+            margin-bottom: 12px;
+            color: #374151;
+            font-size: 16px;
+        }
+
+        .sales-table {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .sales-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            background: #f8fafc;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .sales-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            padding: 12px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .sales-row:hover {
+            background: #f9fafb;
+        }
+
+        .sales-row.positive-variance {
+            border-left: 3px solid #059669;
+        }
+
+        .sales-row.negative-variance {
+            border-left: 3px solid #dc2626;
+        }
+
+        .sales-row.minimal-variance {
+            border-left: 3px solid #6b7280;
+        }
+
+        .col-product {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: #111827;
+            font-size: 13px;
+        }
+
+        .product-category {
+            font-size: 10px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .col-actual, .col-forecast {
+            text-align: center;
+        }
+
+        .actual-value, .forecast-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .actual-label, .forecast-label {
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .col-variance {
+            text-align: center;
+        }
+
+        .variance-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .variance-value.positive {
+            color: #059669;
+        }
+
+        .variance-value.negative {
+            color: #dc2626;
+        }
+
+        .variance-value.minimal {
+            color: #6b7280;
+        }
+
+        .variance-percent {
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .variance-percent.positive {
+            color: #059669;
+        }
+
+        .variance-percent.negative {
+            color: #dc2626;
+        }
+
+        .variance-percent.minimal {
+            color: #6b7280;
+        }
+
+        .col-accuracy {
+            text-align: center;
+        }
+
+        .accuracy-score {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .accuracy-score.excellent {
+            background: #dcfce7;
+            color: #059669;
+        }
+
+        .accuracy-score.high {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .accuracy-score.medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .variance-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .summary-icon {
+            font-size: 18px;
+        }
+
+        .summary-icon.positive {
+            color: #059669;
+        }
+
+        .summary-icon.negative {
+            color: #dc2626;
+        }
+
+        .summary-icon.excellent {
+            color: #2563eb;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            color: #374151;
+            font-size: 12px;
+        }
+
+        .summary-value {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        /* Notification styles - Compact */
+        .notification-channel {
+            margin: 8px 0;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .channel-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .channel-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .slack-icon {
+            background: #4a154b;
+        }
+
+        .whatsapp-icon {
+            background: #25d366;
+        }
+
+        .email-icon {
+            background: #ea4335;
+        }
+
+        .channel-name {
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .channel-status {
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        .notification-count {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .recent-notification {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .notification-actions {
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ack-status, .delivery-status, .email-status {
+            font-size: 9px;
+            color: #059669;
+        }
+
+        /* Compact text sizes */
+        h4 {
+            font-size: 13px !important;
+            margin-bottom: 8px !important;
+        }
+
+        .card p, .card div {
+            font-size: 11px;
+        }
+
+        /* Scrollbar styling */
+        .card::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .card::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+
+        .card::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
+        }
+
+        .card::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏭 ERP OF SUPPLY NEXTS</h1>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-value">98.2%</div>
+                    <div class="stat-label">System Uptime</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">$2.4M</div>
+                    <div class="stat-label">Monthly Revenue</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">847</div>
+                    <div class="stat-label">Active Orders</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">96.8%</div>
+                    <div class="stat-label">Forecast Accuracy</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Demand Forecasting -->
+        <div class="card forecasting">
+            <div class="card-title">
+                <div class="icon icon-green">📊</div>
+                Forecasting Information
+            </div>
+
+            <!-- Forecast Period Selector -->
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                <button class="forecast-btn active" onclick="changeForecastPeriod(7, this)">7 Days</button>
+                <button class="forecast-btn" onclick="changeForecastPeriod(30, this)">30 Days</button>
+                <button class="forecast-btn" onclick="changeForecastPeriod(90, this)">90 Days</button>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="forecastChart"></canvas>
+            </div>
+
+            <!-- Forecast Accuracy Metrics -->
+            <div class="accuracy-metrics">
+                <div class="metric-item">
+                    <div class="metric-value">96.8%</div>
+                    <div class="metric-label">7-Day</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">94.2%</div>
+                    <div class="metric-label">30-Day</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">89.7%</div>
+                    <div class="metric-label">90-Day</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">±2.3%</div>
+                    <div class="metric-label">Variance</div>
+                </div>
+            </div>
+
+            <!-- AI Insights Panel -->
+            <div class="ai-insights">
+                <div class="insight-header">
+                    <span class="ai-badge">🧠 AI Insights</span>
+                    <span class="live-indicator">🟢 Live</span>
+                </div>
+                
+                <div class="trending-products">
+                    <h4>📈 Trending Products</h4>
+                    <div class="trend-item trend-up">
+                        <span>Smart Fans Pro</span>
+                        <span class="trend-value">+34.2%</span>
+                        <button class="btn-mini btn-success" onclick="autoRestock('Smart Fans Pro', 'trending')">Auto Stock</button>
+                    </div>
+                    <div class="trend-item trend-up">
+                        <span>LED Strip Lights</span>
+                        <span class="trend-value">+28.7%</span>
+                        <button class="btn-mini btn-success" onclick="autoRestock('LED Strip Lights', 'trending')">Auto Stock</button>
+                    </div>
+                </div>
+
+                <div class="declining-alerts">
+                    <h4>📉 Declining Demand</h4>
+                    <div class="trend-item trend-down">
+                        <span>Basic Ceiling Fans</span>
+                        <span class="trend-value">-18.3%</span>
+                        <button class="btn-mini btn-primary" onclick="showActionPlan('Basic Ceiling Fans')">Action Plan</button>
+                    </div>
+                </div>
+
+                <div class="weather-impact">
+                    <h4>🌤️ Weather Impact</h4>
+                    <div class="weather-alert">
+                        <div class="weather-icon">🔥</div>
+                        <div class="weather-info">
+                            <div><strong>Heatwave Alert:</strong> Dhaka</div>
+                            <div class="weather-detail">+45% cooling demand spike</div>
+                            <button class="btn-mini btn-orange" onclick="prepareForWeatherSpike('cooling')">Prepare</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-Time Inventory -->
+        <div class="card inventory">
+            <div class="card-title">
+                <div class="icon icon-blue">📦</div>
+                Inventory Update
+            </div>
+
+            <div class="alert-banner">
+                <div class="alert-icon">⚠️</div>
+                <div>
+                    <strong>Critical:</strong> Smart Fans - 47 units
+                    <button class="btn btn-primary" style="margin-left: 8px;" onclick="triggerRestock('Smart Fans')">Auto Restock</button>
+                </div>
+            </div>
+
+            <div class="inventory-grid">
+                <div class="inventory-item stock-critical">
+                    <div class="stock-level">47 units</div>
+                    <div style="font-size: 11px;">Smart Fans - Warehouse A</div>
+                    <div style="font-size: 10px; color: #6b7280;">Critical Level</div>
+                </div>
+                
+                <div class="inventory-item stock-adequate">
+                    <div class="stock-level">1,247 units</div>
+                    <div style="font-size: 11px;">LED Lights - Warehouse B</div>
+                    <div style="font-size: 10px; color: #6b7280;">Adequate Stock</div>
+                </div>
+                
+                <div class="inventory-item stock-low">
+                    <div class="stock-level">156 units</div>
+                    <div style="font-size: 11px;">PCB Components</div>
+                    <div style="font-size: 10px; color: #6b7280;">Low Stock</div>
+                </div>
+                
+                <div class="inventory-item stock-adequate">
+                    <div class="stock-level">892 units</div>
+                    <div style="font-size: 11px;">Packaging Materials</div>
+                    <div style="font-size: 10px; color: #6b7280;">Adequate Stock</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <h4>Warehouse Locations</h4>
+                <div style="display: grid; gap: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f8fafc; border-radius: 6px; font-size: 10px;">
+                        <span><strong>Warehouse A</strong> - Dhaka</span>
+                        <span style="color: #059669;">87% Capacity</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f8fafc; border-radius: 6px; font-size: 10px;">
+                        <span><strong>Warehouse B</strong> - Chittagong</span>
+                        <span style="color: #d97706;">92% Capacity</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f8fafc; border-radius: 6px; font-size: 10px;">
+                        <span><strong>Warehouse C</strong> - Sylhet</span>
+                        <span style="color: #059669;">74% Capacity</span>
+                    </div>
+                </div>
+                
+                <h4>RFID Tracking Status</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+                    <div style="text-align: center; padding: 6px; background: #f0fdf4; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #059669;">2,847</div>
+                        <div style="font-size: 9px; color: #6b7280;">Items Tracked</div>
+                    </div>
+                    <div style="text-align: center; padding: 6px; background: #fef3c7; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #d97706;">23</div>
+                        <div style="font-size: 9px; color: #6b7280;">Missing Tags</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; gap: 8px;">
+                <button class="btn btn-success" onclick="refreshInventory()">🔄 Refresh</button>
+                <button class="btn btn-primary" onclick="viewWarehouseMap()">🗺️ Map</button>
+            </div>
+        </div>
+
+        <!-- Production, Logistics & Quality Control -->
+        <div class="card production-logistics">
+            <div class="card-title">
+                <div class="icon icon-orange">🏭</div>
+                Production, Logistics & Quality Control
+            </div>
+
+            <!-- Production Lines Status -->
+            <div style="margin-bottom: 15px;">
+                <h4>Production Lines Status</h4>
+                <div style="display: grid; gap: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f0fdf4; border-radius: 6px; font-size: 10px; border-left: 3px solid #059669;">
+                        <span><strong>Line A</strong> - Smart Fans</span>
+                        <span style="color: #059669;">Running (87%)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #fef3c7; border-radius: 6px; font-size: 10px; border-left: 3px solid #d97706;">
+                        <span><strong>Line B</strong> - LED Lights</span>
+                        <span style="color: #d97706;">Maintenance</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f0fdf4; border-radius: 6px; font-size: 10px; border-left: 3px solid #059669;">
+                        <span><strong>Line C</strong> - PCB Assembly</span>
+                        <span style="color: #059669;">Running (92%)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #fee2e2; border-radius: 6px; font-size: 10px; border-left: 3px solid #dc2626;">
+                        <span><strong>Line D</strong> - Packaging</span>
+                        <span style="color: #dc2626;">Stopped</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production Timeline -->
+            <div style="margin-bottom: 15px;">
+                <h4>Production Timeline</h4>
+                <div class="production-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-status status-complete"></div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">Smart Fan Assembly</div>
+                            <div style="font-size: 10px; color: #6b7280;">Completed - 2h ahead</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-status status-progress"></div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">Quality Testing</div>
+                            <div style="font-size: 10px; color: #6b7280;">67% complete</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-status status-delayed"></div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">PCB Installation</div>
+                            <div style="font-size: 10px; color: #6b7280;">Delayed - Material shortage</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Control Metrics -->
+            <div style="margin-bottom: 15px;">
+                <h4>Quality Control Metrics</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+                    <div style="text-align: center; padding: 8px; background: #f0fdf4; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #059669;">98.7%</div>
+                        <div style="font-size: 9px; color: #6b7280;">Pass Rate</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #fef2f2; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #dc2626;">23</div>
+                        <div style="font-size: 9px; color: #6b7280;">Defects Today</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #f8fafc; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #2563eb;">4.2min</div>
+                        <div style="font-size: 9px; color: #6b7280;">Avg Test Time</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #f8fafc; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #2563eb;">847</div>
+                        <div style="font-size: 9px; color: #6b7280;">Units Tested</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Optimization -->
+            <div style="margin-bottom: 15px;">
+                <h4>Delivery Optimization</h4>
+                <div class="delivery-map">
+                    <div style="text-align: center; color: #2563eb; font-size: 11px;">
+                        <div style="font-weight: 600;">Route Optimization Active</div>
+                        <div style="font-size: 10px; margin-top: 3px;">3 trucks • 47 deliveries • ETA: 4.2h</div>
+                    </div>
+                    <div class="route-line" style="top: 50%; left: 10%; width: 70%;"></div>
+                    <div class="truck-icon">🚛</div>
+                </div>
+                <div style="display: flex; gap: 6px; margin-top: 8px;">
+                    <button class="btn btn-primary" onclick="optimizeRoutes()">🗺️ Optimize</button>
+                    <button class="btn btn-success" onclick="trackDeliveries()">📍 Track</button>
+                </div>
+            </div>
+
+            <!-- Supplier Sync -->
+            <div style="margin-bottom: 15px;">
+                <h4>Supplier Sync (Blockchain)</h4>
+                <div class="supplier-grid">
+                    <div class="supplier-item">
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">PCB - TechCorp</div>
+                            <div style="font-size: 9px; color: #6b7280;">VeChain Verified</div>
+                        </div>
+                        <div class="supplier-status status-critical">Critical</div>
+                    </div>
+                    <div class="supplier-item">
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">Motors - MotorTech</div>
+                            <div style="font-size: 9px; color: #6b7280;">Blockchain Tracked</div>
+                        </div>
+                        <div class="supplier-status status-ontime">On Time</div>
+                    </div>
+                    <div class="supplier-item">
+                        <div>
+                            <div style="font-weight: 600; font-size: 11px;">LED - LightCo</div>
+                            <div style="font-size: 9px; color: #6b7280;">Smart Contract</div>
+                        </div>
+                        <div class="supplier-status status-delayed">Delayed</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fleet Management -->
+            <div style="margin-bottom: 15px;">
+                <h4>Fleet Management</h4>
+                <div style="display: grid; gap: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f0fdf4; border-radius: 6px; font-size: 10px;">
+                        <span>🚛 Truck #001 - Route A</span>
+                        <span style="color: #059669;">On Time</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #fef3c7; border-radius: 6px; font-size: 10px;">
+                        <span>🚛 Truck #002 - Route B</span>
+                        <span style="color: #d97706;">15min Delay</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f0fdf4; border-radius: 6px; font-size: 10px;">
+                        <span>🚛 Truck #003 - Route C</span>
+                        <span style="color: #059669;">Early</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Requirements & Energy -->
+            <div style="margin-bottom: 15px;">
+                <h4>Material Requirements</h4>
+                <div style="display: grid; gap: 4px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f8fafc; border-radius: 4px; font-size: 10px;">
+                        <span>Steel Sheets</span>
+                        <span style="color: #059669;">✓ Available</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #fef3c7; border-radius: 4px; font-size: 10px;">
+                        <span>Copper Wire</span>
+                        <span style="color: #d97706;">⚠️ Low (2 days)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #fee2e2; border-radius: 4px; font-size: 10px;">
+                        <span>Microchips</span>
+                        <span style="color: #dc2626;">❌ Critical</span>
+                    </div>
+                </div>
+
+                <h4>Energy & Performance</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <div style="text-align: center; padding: 6px; background: #f0f9ff; border-radius: 6px;">
+                        <div style="font-size: 12px; font-weight: bold; color: #2563eb;">2,847 kWh</div>
+                        <div style="font-size: 9px; color: #6b7280;">Today's Usage</div>
+                    </div>
+                    <div style="text-align: center; padding: 6px; background: #f0fdf4; border-radius: 6px;">
+                        <div style="font-size: 12px; font-weight: bold; color: #059669;">-12%</div>
+                        <div style="font-size: 9px; color: #6b7280;">vs Yesterday</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-primary" onclick="viewProductionReport()">📊 Report</button>
+                <button class="btn btn-success" onclick="scheduleMaintenace()">🔧 Schedule</button>
+            </div>
+        </div>
+
+        <!-- Smart Notifications & SMS -->
+        <div class="card notifications">
+            <div class="card-title">
+                <div class="icon icon-blue">💬</div>
+                📱 MESSAGING & NOTIFICATIONS CENTER
+            </div>
+            
+            <!-- Quick Action Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border: 2px solid #2563eb;">
+                <button class="btn btn-primary" onclick="sendBulkMessage()" style="font-size: 10px; padding: 8px;">📢 Send Bulk Message</button>
+                <button class="btn btn-success" onclick="emergencyAlert()" style="font-size: 10px; padding: 8px;">🚨 Emergency Alert</button>
+            </div>
+            
+            <!-- Slack Integration -->
+            <div class="notification-channel">
+                <div class="channel-header">
+                    <div class="channel-icon slack-icon">💬</div>
+                    <div class="channel-info">
+                        <div class="channel-name">Slack</div>
+                        <div class="channel-status">🟢 #inventory-alerts</div>
+                    </div>
+                    <div class="channel-stats">
+                        <span class="notification-count">12</span>
+                    </div>
+                </div>
+                <div class="recent-notification">
+                    <div class="notification-content">
+                        <strong>@channel</strong> Critical: Smart Fans (47 units)
+                        <div class="notification-actions">
+                            <span class="ack-status">✅ @john.doe</span>
+                            <button class="btn-mini btn-primary" onclick="sendSlackAlert()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Business -->
+            <div class="notification-channel">
+                <div class="channel-header">
+                    <div class="channel-icon whatsapp-icon">📱</div>
+                    <div class="channel-info">
+                        <div class="channel-name">WhatsApp</div>
+                        <div class="channel-status">🟢 5 managers</div>
+                    </div>
+                    <div class="channel-stats">
+                        <span class="notification-count">8</span>
+                    </div>
+                </div>
+                <div class="recent-notification">
+                    <div class="notification-content">
+                        🚨 Heatwave: +45% cooling demand
+                        <div class="notification-actions">
+                            <span class="delivery-status">📱 5/5 delivered</span>
+                            <button class="btn-mini btn-success" onclick="sendWhatsAppAlert()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SMS Alerts -->
+            <div class="notification-channel">
+                <div class="channel-header">
+                    <div class="channel-icon" style="background: #8b5cf6;">📲</div>
+                    <div class="channel-info">
+                        <div class="channel-name">SMS Alerts</div>
+                        <div class="channel-status">🟢 15 contacts</div>
+                    </div>
+                    <div class="channel-stats">
+                        <span class="notification-count">6</span>
+                    </div>
+                </div>
+                <div class="recent-notification">
+                    <div class="notification-content">
+                        🏭 Production Line D stopped - urgent
+                        <div class="notification-actions">
+                            <span class="delivery-status">📲 15/15 sent</span>
+                            <button class="btn-mini btn-primary" onclick="sendSMSAlert()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Reports -->
+            <div class="notification-channel">
+                <div class="channel-header">
+                    <div class="channel-icon email-icon">📧</div>
+                    <div class="channel-info">
+                        <div class="channel-name">Email</div>
+                        <div class="channel-status">🟢 Daily 9:00 AM</div>
+                    </div>
+                    <div class="channel-stats">
+                        <span class="notification-count">14h</span>
+                    </div>
+                </div>
+                <div class="recent-notification">
+                    <div class="notification-content">
+                        📊 Daily Report: 96.8% accuracy
+                        <div class="notification-actions">
+                            <span class="email-status">📧 12 stakeholders</span>
+                            <button class="btn-mini btn-primary" onclick="sendEmailReport()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Analysis -->
+        <div class="card sales-analysis">
+            <div class="sales-analysis-content">
+                <h4>📊 Sales Performance (Last 7 Days)</h4>
+                <div class="sales-table">
+                    <div class="sales-header">
+                        <div class="col-product">Product</div>
+                        <div class="col-actual">Actual Qty</div>
+                        <div class="col-forecast">Forecast Qty</div>
+                        <div class="col-variance">Variance</div>
+                        <div class="col-accuracy">Accuracy</div>
+                    </div>
+                    
+                    <div class="sales-row positive-variance">
+                        <div class="col-product">
+                            <div class="product-name">Smart Fans Pro</div>
+                            <div class="product-category">Cooling</div>
+                        </div>
+                        <div class="col-actual">
+                            <div class="actual-value">1,247</div>
+                            <div class="actual-label">units sold</div>
+                        </div>
+                        <div class="col-forecast">
+                            <div class="forecast-value">1,180</div>
+                            <div class="forecast-label">predicted</div>
+                        </div>
+                        <div class="col-variance">
+                            <div class="variance-value positive">+67</div>
+                            <div class="variance-percent positive">+5.7%</div>
+                        </div>
+                        <div class="col-accuracy">
+                            <div class="accuracy-score high">94.3%</div>
+                        </div>
+                    </div>
+
+                    <div class="sales-row negative-variance">
+                        <div class="col-product">
+                            <div class="product-name">LED Strip Lights</div>
+                            <div class="product-category">Lighting</div>
+                        </div>
+                        <div class="col-actual">
+                            <div class="actual-value">892</div>
+                            <div class="actual-label">units sold</div>
+                        </div>
+                        <div class="col-forecast">
+                            <div class="forecast-value">950</div>
+                            <div class="forecast-label">predicted</div>
+                        </div>
+                        <div class="col-variance">
+                            <div class="variance-value negative">-58</div>
+                            <div class="variance-percent negative">-6.1%</div>
+                        </div>
+                        <div class="col-accuracy">
+                            <div class="accuracy-score medium">93.9%</div>
+                        </div>
+                    </div>
+
+                    <div class="sales-row positive-variance">
+                        <div class="col-product">
+                            <div class="product-name">Smart Home Hub</div>
+                            <div class="product-category">Smart Tech</div>
+                        </div>
+                        <div class="col-actual">
+                            <div class="actual-value">456</div>
+                            <div class="actual-label">units sold</div>
+                        </div>
+                        <div class="col-forecast">
+                            <div class="forecast-value">420</div>
+                            <div class="forecast-label">predicted</div>
+                        </div>
+                        <div class="col-variance">
+                            <div class="variance-value positive">+36</div>
+                            <div class="variance-percent positive">+8.6%</div>
+                        </div>
+                        <div class="col-accuracy">
+                            <div class="accuracy-score high">91.4%</div>
+                        </div>
+                    </div>
+
+                    <div class="sales-row minimal-variance">
+                        <div class="col-product">
+                            <div class="product-name">Basic Ceiling Fans</div>
+                            <div class="product-category">Traditional</div>
+                        </div>
+                        <div class="col-actual">
+                            <div class="actual-value">234</div>
+                            <div class="actual-label">units sold</div>
+                        </div>
+                        <div class="col-forecast">
+                            <div class="forecast-value">238</div>
+                            <div class="forecast-label">predicted</div>
+                        </div>
+                        <div class="col-variance">
+                            <div class="variance-value minimal">-4</div>
+                            <div class="variance-percent minimal">-1.7%</div>
+                        </div>
+                        <div class="col-accuracy">
+                            <div class="accuracy-score excellent">98.3%</div>
+                        </div>
+                    </div>
+
+                    <div class="sales-row positive-variance">
+                        <div class="col-product">
+                            <div class="product-name">Wireless Switches</div>
+                            <div class="product-category">Smart Tech</div>
+                        </div>
+                        <div class="col-actual">
+                            <div class="actual-value">678</div>
+                            <div class="actual-label">units sold</div>
+                        </div>
+                        <div class="col-forecast">
+                            <div class="forecast-value">620</div>
+                            <div class="forecast-label">predicted</div>
+                        </div>
+                        <div class="col-variance">
+                            <div class="variance-value positive">+58</div>
+                            <div class="variance-percent positive">+9.4%</div>
+                        </div>
+                        <div class="col-accuracy">
+                            <div class="accuracy-score high">90.6%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="variance-summary">
+                    <div class="summary-item">
+                        <div class="summary-icon positive">📈</div>
+                        <div class="summary-content">
+                            <div class="summary-title">Over-Performance</div>
+                            <div class="summary-value">3 products (+7.9% avg)</div>
+                        </div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-icon negative">📉</div>
+                        <div class="summary-content">
+                            <div class="summary-title">Under-Performance</div>
+                            <div class="summary-value">1 product (-6.1%)</div>
+                        </div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-icon excellent">🎯</div>
+                        <div class="summary-content">
+                            <div class="summary-title">High Accuracy</div>
+                            <div class="summary-value">93.7% overall accuracy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Details -->
+        <div class="card additional-details">
+            <div class="card-title">
+                <div class="icon icon-blue">📋</div>
+                Financial & Analytics Overview
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4>Financial Performance</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+                    <div style="text-align: center; padding: 8px; background: #f0fdf4; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #059669;">$2.4M</div>
+                        <div style="font-size: 9px; color: #6b7280;">Monthly Revenue</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #f0f9ff; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #2563eb;">$1.8M</div>
+                        <div style="font-size: 9px; color: #6b7280;">Production Cost</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #fef3c7; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #d97706;">25%</div>
+                        <div style="font-size: 9px; color: #6b7280;">Profit Margin</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: #f8fafc; border-radius: 6px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #2563eb;">$600K</div>
+                        <div style="font-size: 9px; color: #6b7280;">Net Profit</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4>Customer Analytics</h4>
+                <div style="display: grid; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f0fdf4; border-radius: 4px; font-size: 10px;">
+                        <span>Customer Satisfaction</span>
+                        <span style="color: #059669;">4.8/5.0 ⭐</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f8fafc; border-radius: 4px; font-size: 10px;">
+                        <span>Return Rate</span>
+                        <span style="color: #2563eb;">2.3%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f0fdf4; border-radius: 4px; font-size: 10px;">
+                        <span>Repeat Customers</span>
+                        <span style="color: #059669;">78%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f8fafc; border-radius: 4px; font-size: 10px;">
+                        <span>New Acquisitions</span>
+                        <span style="color: #2563eb;">+12% MoM</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4>Market Intelligence</h4>
+                <div style="display: grid; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f0fdf4; border-radius: 4px; font-size: 10px;">
+                        <span>Market Share</span>
+                        <span style="color: #059669;">34.2%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #fef3c7; border-radius: 4px; font-size: 10px;">
+                        <span>Competitor Analysis</span>
+                        <span style="color: #d97706;">+2.1% vs Q3</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f8fafc; border-radius: 4px; font-size: 10px;">
+                        <span>Brand Recognition</span>
+                        <span style="color: #2563eb;">87%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4>Sustainability Metrics</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <div style="text-align: center; padding: 6px; background: #f0fdf4; border-radius: 6px;">
+                        <div style="font-size: 12px; font-weight: bold; color: #059669;">-18%</div>
+                        <div style="font-size: 9px; color: #6b7280;">Carbon Footprint</div>
+                    </div>
+                    <div style="text-align: center; padding: 6px; background: #f0f9ff; border-radius: 6px;">
+                        <div style="font-size: 12px; font-weight: bold; color: #2563eb;">92%</div>
+                        <div style="font-size: 9px; color: #6b7280;">Recycled Materials</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4>Risk Assessment</h4>
+                <div style="display: grid; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f0fdf4; border-radius: 4px; font-size: 10px;">
+                        <span>Supply Chain Risk</span>
+                        <span style="color: #059669;">Low</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #fef3c7; border-radius: 4px; font-size: 10px;">
+                        <span>Market Volatility</span>
+                        <span style="color: #d97706;">Medium</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: #f0fdf4; border-radius: 4px; font-size: 10px;">
+                        <span>Operational Risk</span>
+                        <span style="color: #059669;">Low</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-primary" onclick="viewFinancialReport()">💰 Finance</button>
+                <button class="btn btn-success" onclick="viewAnalytics()">📈 Analytics</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize forecast chart
+        const ctx = document.getElementById('forecastChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Actual Sales',
+                    data: [1200, 1350, 1100, 1450, 1600, 1400],
+                    borderColor: '#059669',
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    tension: 0.4,
+                    borderWidth: 2
+                }, {
+                    label: 'Forecasted',
+                    data: [1180, 1320, 1150, 1420, 1580, 1450],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Enhanced Interactive Functions
+        function changeForecastPeriod(days, button) {
+            document.querySelectorAll('.forecast-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            alert(`🤖 AI Forecast updated to ${days}-day period!\n\n✓ Recalculating predictions\n✓ Updating accuracy metrics\n✓ Refreshing trend analysis\n\nNew forecast accuracy: ${days === 7 ? '96.8%' : days === 30 ? '94.2%' : '89.7%'}`);
+        }
+
+        function autoRestock(product, reason) {
+            const reasons = {
+                'trending': 'trending demand spike',
+                'weather': 'weather impact prediction',
+                'critical': 'critical stock level'
+            };
+            alert(`🤖 AI Auto-Restock Triggered!\n\nProduct: ${product}\nReason: ${reasons[reason] || 'automated threshold'}\n\n✓ Supplier notification sent\n✓ Purchase order generated\n✓ Slack team alerted\n✓ WhatsApp managers notified\n\nExpected delivery: 2-3 business days`);
+        }
+
+        function showActionPlan(product) {
+            alert(`📉 Declining Demand Action Plan\n\nProduct: ${product}\n\n🎯 Recommended Actions:\n• Launch promotional campaign\n• Bundle with trending products\n• Adjust pricing strategy\n• Review market positioning\n\n✓ Marketing team notified\n✓ Pricing analysis initiated`);
+        }
+
+        function prepareForWeatherSpike(category) {
+            alert(`🌤️ Weather Impact Preparation\n\nCategory: ${category} products\n\n🚀 Actions Initiated:\n• Auto-increased stock orders (+45%)\n• Supplier priority alerts sent\n• Warehouse space optimized\n• Distribution routes prepared\n\n✓ All systems ready for demand spike!`);
+        }
+
+        function sendSlackAlert() {
+            alert(`💬 Slack Alert Sent!\n\n📢 Channel: #inventory-alerts\n👥 Recipients: 12 team members\n\n✅ Message delivered\n⏰ Acknowledgment pending\n🔔 Follow-up scheduled in 15 minutes`);
+        }
+
+        function sendWhatsAppAlert() {
+            alert(`📱 WhatsApp Business Alert Sent!\n\n👥 Recipients: 5 managers\n📍 Locations: Dhaka, Chittagong, Sylhet\n\n✅ Messages delivered\n📊 Read receipts: 4/5\n⚡ Response time: <2 minutes`);
+        }
+
+        function sendEmailReport() {
+            alert(`📧 Email Report Sent!\n\n📊 Daily Forecast Summary\n👥 Recipients: 12 stakeholders\n📈 Accuracy: 96.8%\n🎯 Trending: 3 products\n\n✅ All emails delivered\n📱 Mobile notifications sent`);
+        }
+
+        function sendSMSAlert() {
+            alert(`📲 SMS Alert Sent!\n\n🏭 Production Line D Emergency\n👥 Recipients: 15 contacts\n📍 Locations: All facilities\n\n✅ Messages delivered\n⏱️ Response time: <30 seconds\n🚨 Escalation protocol activated`);
+        }
+
+        function triggerRestock(product) {
+            alert(`🚀 Auto-restock initiated for ${product}!\n\n✓ AI analysis completed\n✓ Supplier notification sent\n✓ Purchase order generated\n✓ Slack & WhatsApp alerts sent\n✓ Expected delivery: 2-3 business days`);
+        }
+
+        function refreshInventory() {
+            alert('🔄 RFID inventory scan initiated!\n\n✓ Scanning all warehouses\n✓ AI analyzing stock patterns\n✓ Updating forecast models\n✓ Checking product locations\n✓ Threshold alerts updated');
+        }
+
+        function viewWarehouseMap() {
+            alert('🗺️ Opening warehouse layout...\n\n✓ Real-time product locations\n✓ RFID tag positions\n✓ Optimal picking routes\n✓ AI-suggested reorganization\n✓ Heat map of popular items');
+        }
+
+        function optimizeRoutes() {
+            alert('🗺️ AI Route optimization in progress...\n\n✓ Analyzing traffic patterns\n✓ Weather impact assessment\n✓ Calculating fuel efficiency\n✓ Updating delivery schedules\n✓ Customer notification automation\n\nEstimated time savings: 23 minutes');
+        }
+
+        function trackDeliveries() {
+            alert('📍 Live tracking activated!\n\n✓ 3 trucks currently en route\n✓ GPS coordinates updated\n✓ AI predicting delays\n✓ Customer notifications automated\n✓ WhatsApp status updates sent\n\nAverage ETA: 4.2 hours');
+        }
+
+        function viewProductionReport() {
+            alert('📊 Production Report Generated!\n\n📈 Today\'s Performance:\n• Line A: 87% efficiency (Smart Fans)\n• Line B: Under maintenance (LED Lights)\n• Line C: 92% efficiency (PCB Assembly)\n• Line D: Stopped (Packaging)\n\n✓ Quality pass rate: 98.7%\n✓ Energy consumption: -12% vs yesterday\n✓ Material alerts: 2 critical items');
+        }
+
+        function scheduleMaintenace() {
+            alert('🔧 Maintenance Scheduled!\n\n📅 Upcoming Maintenance:\n• Line B: Currently in progress\n• Line D: Emergency repair scheduled\n• Truck #002: Service in 2 days\n\n✓ Technicians notified\n✓ Parts ordered automatically\n✓ Production schedule adjusted\n✓ WhatsApp alerts sent to supervisors');
+        }
+
+        function viewFinancialReport() {
+            alert('💰 Financial Report Generated!\n\n📊 Monthly Performance:\n• Revenue: $2.4M (+8.3% MoM)\n• Production Cost: $1.8M\n• Profit Margin: 25%\n• Net Profit: $600K\n\n📈 Key Insights:\n• Customer satisfaction: 4.8/5.0\n• Return rate: 2.3% (industry avg: 4.1%)\n• Market share growth: +2.1%\n\n✓ Report sent to stakeholders\n✓ Board presentation ready');
+        }
+
+        function viewAnalytics() {
+            alert('📈 Advanced Analytics Dashboard!\n\n🎯 Key Metrics:\n• Market share: 34.2% (leading position)\n• Brand recognition: 87%\n• Customer retention: 78%\n• New acquisitions: +12% MoM\n\n🌱 Sustainability:\n• Carbon footprint: -18% reduction\n• Recycled materials: 92%\n\n⚠️ Risk Assessment:\n• Supply chain: Low risk\n• Market volatility: Medium\n• Operational: Low risk\n\n✓ AI-powered insights ready');
+        }
+
+        function sendBulkMessage() {
+            alert('📢 BULK MESSAGE CENTER\n\n📱 Available Channels:\n✓ SMS: 15 contacts ready\n✓ WhatsApp: 5 managers online\n✓ Slack: 12 team members active\n✓ Email: 12 stakeholders\n\n🎯 Message Types:\n• Inventory alerts\n• Production updates\n• Quality notifications\n• Emergency broadcasts\n\n✅ All channels ready for messaging!');
+        }
+
+        function emergencyAlert() {
+            alert('🚨 EMERGENCY ALERT SYSTEM\n\n⚡ IMMEDIATE BROADCAST:\n📲 SMS: Sent to all 15 contacts\n📱 WhatsApp: Sent to 5 managers\n💬 Slack: Posted to #emergency\n📧 Email: High priority sent\n\n🔔 Alert Details:\n• Production line emergency\n• Immediate response required\n• All supervisors notified\n• Escalation protocol active\n\n✅ Emergency alert sent successfully!');
+        }
+
+        // Simulate real-time updates
+        setInterval(() => {
+            const stats = document.querySelectorAll('.stat-value');
+            if (stats.length > 0) {
+                const uptimeElement = stats[0];
+                const currentUptime = parseFloat(uptimeElement.textContent);
+                const newUptime = (currentUptime + (Math.random() * 0.1 - 0.05)).toFixed(1);
+                uptimeElement.textContent = newUptime + '%';
+            }
+        }, 5000);
+
+        // Add hover effects
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.boxShadow = '0 8px 30px rgba(0,0,0,0.15)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b5c0b0b62bdae2',t:'MTc1NDU1ODk5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
